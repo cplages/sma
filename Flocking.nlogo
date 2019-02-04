@@ -15,6 +15,8 @@ to setup
     [ set color yellow - 2 + random 7  ;; random shades look nice
       set size 1.5  ;; easier to see
       setxy random-xcor random-ycor
+      set v (list ((random-float 2) - 1) ((random-float 2) - 1))
+      set speed-max 2
       set flockmates no-turtles ]
   reset-ticks
 end
@@ -23,7 +25,9 @@ to go
   ask turtles [ flock ]
   ;; the following line is used to make the turtles
   ;; animate more smoothly.
-  repeat 5 [ ask turtles [ fd 0.2 ] display ]
+  ; Move the turtle according to the velocity
+  ask turtles [turn-towards atan (first v) (last v)]
+  ask turtles [ fd norm v ] display
   ;; for greater efficiency, at the expense of smooth
   ;; animation, substitute the following line instead:
   ;;   ask turtles [ fd 1 ]
@@ -37,12 +41,18 @@ to flock  ;; turtle procedure
     set fs separate-force
     set fc cohesion-force
     set fa align-force
-    set fk (fs + fc + fa)
+
+    set fs (vector-mult-scal fs coef-separate)
+    set fc (vector-mult-scal fc coef-cohesion)
+    set fa (vector-mult-scal fa coef-align)
+
+    set fk (vector-add fs (vector-add fc fa))
     ; Compute velocity
-    set v (v + fk)
-    ; Move the turtle according to the velocity
-    fd norm v
-    turn-towards atan (first v) (last v)
+    set v (vector-add fk v)
+    if norm v >= speed-max
+    [
+      set v clamp-vector v speed-max
+    ]
   ]
 ;    [ find-nearest-neighbor
 ;      ifelse distance nearest-neighbor < minimum-separation
@@ -51,8 +61,20 @@ to flock  ;; turtle procedure
 ;          cohere ] ]
 end
 
+to-report clamp-vector [vector norm-max]
+  let x-max (first vector / norm vector) * norm-max
+  let y-max (last vector / norm vector) * norm-max
+  report list x-max y-max
+end
+
 to-report norm [vector]
   report sqrt ( (first vector) ^ 2 + (last vector) ^ 2 )
+end
+
+to-report normalize [v0]
+  ifelse norm v0 = 0
+  [report v0 ]
+  [report vector-mult-scal v0 (1 / (norm v0))]
 end
 
 to find-flockmates  ;; turtle procedure
@@ -71,11 +93,14 @@ end
 
 to-report separate-force
   let tmp-fs [0 0]
-  foreach flockmates
-  [ neighbor ->
-    let dir ([v] of neighbor - v)
-    set dir (dir / distance neighbor)
-    set tmp-fs (tmp-fs + dir)
+  let current-x xcor
+  let current-y ycor
+  let current-id who
+  ask flockmates
+  [
+    let dir (list (current-x - xcor) (current-y - ycor))
+    set dir (vector-mult-scal dir (1 / distance turtle current-id))
+    set tmp-fs (vector-add tmp-fs dir)
   ]
   report tmp-fs
 end
@@ -87,7 +112,9 @@ to align  ;; turtle procedure
 end
 
 to-report align-force
-  report mean [heading] of flockmates
+  let dir-mean-x mean [first v] of flockmates
+  let dir-mean-y mean [last v] of flockmates
+  report normalize (list dir-mean-x dir-mean-y)
 end
 
 to-report average-flockmate-heading  ;; turtle procedure
@@ -111,10 +138,12 @@ to-report cohesion-force
 ;  let gravity-center [0 0]
 ;  let x mean [xcor] of flockmates
 ;  let y mean [ycor] of flockmates
-  let gravity-center mean [v] of flockmates
-  let dir (v - gravity-center)
-  let v-max (speed-max * dir)
-  report v-max - v
+  let gravity-center-x mean [xcor] of flockmates
+  let gravity-center-y mean [ycor] of flockmates
+  let gravity-center (list gravity-center-x gravity-center-y)
+  let dir (vector-minus gravity-center (list xcor ycor))
+  let v-max (vector-mult-scal dir speed-max)
+  report vector-minus v-max v
 end
 
 to-report average-heading-towards-flockmates  ;; turtle procedure
@@ -148,6 +177,24 @@ to turn-at-most [turn]  ;; turtle procedure
     [ rt turn ]
 end
 
+
+;; TOOLS FUNCTION
+
+to-report vector-add [v1 v2]
+  report (map + v1 v2)
+end
+
+to-report vector-add-scal [v0 k]
+  report (list (first v0 + k) (last v0 + k))
+end
+
+to-report vector-minus [v1 v2]
+  report (map - v1 v2)
+end
+
+to-report vector-mult-scal [v0 k]
+  report (list (first v0 * k) (last v0 * k))
+end
 
 ; Copyright 1998 Uri Wilensky.
 ; See Info tab for full copyright and license.
@@ -222,7 +269,7 @@ population
 population
 1.0
 1000.0
-300.0
+4.0
 1.0
 1
 NIL
@@ -282,7 +329,7 @@ vision
 vision
 0.0
 10.0
-5.0
+10.0
 0.5
 1
 patches
@@ -331,6 +378,51 @@ max-turn
 1
 1
 degrees
+HORIZONTAL
+
+SLIDER
+881
+127
+1053
+160
+coef-separate
+coef-separate
+0
+1
+0.0
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+884
+198
+1056
+231
+coef-cohesion
+coef-cohesion
+0
+1
+1.0
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+883
+276
+1055
+309
+coef-align
+coef-align
+0
+1
+0.0
+0.01
+1
+NIL
 HORIZONTAL
 
 @#$#@#$#@
