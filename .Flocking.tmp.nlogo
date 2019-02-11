@@ -108,7 +108,7 @@ to turn-at-most [turn]  ;; turtle procedure
 end
 
 
-;; TOOLS VECTOR FUNCTION
+;; TOOLS VFUNCTION
 
 to-report vector-add [v1 v2]
   report (map + v1 v2)
