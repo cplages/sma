@@ -9,9 +9,13 @@ turtles-own [
   initial-speed
 ]
 
+patches-own [
+  is-maple-syrup  ; boolean
+]
+
 to setup
   clear-all
-  create-turtles population
+  create-turtles pancakes-population
     [ set color yellow - 2 + random 7  ;; random shades look nice
       set size 1.5  ;; easier to see
       setxy random-xcor random-ycor
@@ -20,16 +24,63 @@ to setup
       set max-speed 2
       set flockmates no-turtles
     ]
+  place-maple-syrup
   reset-ticks
 end
 
 to go
-  ask turtles [ flock ]
-  ; Move the turtle according to the velocity
-  ask turtles [if (first fk != 0) and (last fk != 0)  [turn-towards atan (first fk) (last fk)]]
-  ask turtles [ fd ( (norm fk) + initial-speed)] display
+  ask turtles
+  [
+    flock
+    ; Move the turtle according to the velocity
+    if (first fk != 0) and (last fk != 0)  [turn-towards atan (first fk) (last fk)]
+    fd ( (norm fk) + initial-speed)
+    ; Eat maple syrup
+    eat-maple-syrup
+  ] display
+
   tick
 end
+
+;; PANCAKES vs MAPLE SYRUP
+
+to set-patch-syrup [x y]
+  ask patch x y
+  [
+    set pcolor maple-syrup-color
+    set is-maple-syrup true
+  ]
+end
+
+to unset-patch-syrup [x y]
+  ask patch x y
+  [
+    set pcolor 0
+    set is-maple-syrup false
+  ]
+end
+
+to place-maple-syrup
+  let clean-patches patches
+  ; Create the maple syrup places
+  repeat number-of-maple-syrup
+  [
+    ask one-of clean-patches
+    [
+      set-patch-syrup pxcor pycor
+      set clean-patches other clean-patches ; remove itself from the agentset
+    ]
+  ]
+end
+
+to eat-maple-syrup
+  ask patch-here
+  [
+      if (is-maple-syrup = true) [unset-patch-syrup pxcor pycor]
+  ]
+end
+
+;;; FLOCKING
 
 to flock  ;; turtle procedure
   find-flockmates
@@ -212,59 +263,14 @@ SLIDER
 51
 232
 84
-population
-population
+pancakes-population
+pancakes-population
 1.0
 1000.0
 12.0
 1.0
 1
 NIL
-HORIZONTAL
-
-SLIDER
-1247
-57
-1480
-90
-max-align-turn
-max-align-turn
-0.0
-20.0
-6.0
-0.25
-1
-degrees
-HORIZONTAL
-
-SLIDER
-1247
-91
-1480
-124
-max-cohere-turn
-max-cohere-turn
-0.0
-20.0
-3.25
-0.25
-1
-degrees
-HORIZONTAL
-
-SLIDER
-1247
-125
-1480
-158
-max-separate-turn
-max-separate-turn
-0.0
-20.0
-1.5
-0.25
-1
-degrees
 HORIZONTAL
 
 SLIDER
@@ -278,21 +284,6 @@ vision
 10.0
 10.0
 0.5
-1
-patches
-HORIZONTAL
-
-SLIDER
-9
-169
-232
-202
-minimum-separation
-minimum-separation
-0.0
-5.0
-1.0
-0.25
 1
 patches
 HORIZONTAL
@@ -343,34 +334,60 @@ NIL
 HORIZONTAL
 
 SLIDER
-884
-198
-1056
-231
+880
+168
+1052
+201
 coef-cohesion
 coef-cohesion
 0
 1
-0.07
+0.08
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-883
-276
-1055
-309
+881
+209
+1053
+242
 coef-align
 coef-align
 0
 1
-0.45
+0.14
 0.01
 1
 NIL
 HORIZONTAL
+
+SLIDER
+1156
+128
+1329
+161
+number-of-maple-syrup
+number-of-maple-syrup
+1
+50
+19.0
+1
+1
+NIL
+HORIZONTAL
+
+INPUTBOX
+1167
+167
+1322
+227
+maple-syrup-color
+25.0
+1
+0
+Color
 
 @#$#@#$#@
 ## WHAT IS IT?
