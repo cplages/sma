@@ -1,3 +1,6 @@
+globals [previous-maple-syrup eaten-total-percentage]
+
+
 turtles-own [
   flockmates         ;; agentset of nearby turtles
   nearest-neighbor   ;; closest one of our flockmates
@@ -15,6 +18,10 @@ patches-own [
 
 to setup
   clear-all
+  ;;set global variable
+  set previous-maple-syrup number-of-maple-syrup
+  set eaten-total-percentage 0
+
   create-turtles pancakes-population
     [ set color yellow - 2 + random 7  ;; random shades look nice
       set size 1.5  ;; easier to see
@@ -24,7 +31,10 @@ to setup
       set max-speed 2
       set flockmates no-turtles
     ]
-  place-maple-syrup
+
+  ifelse pack-distribution
+  [ place-pack-maple-syrup]
+  [ place-random-maple-syrup ]
   reset-ticks
 end
 
@@ -60,7 +70,8 @@ to unset-patch-syrup [x y]
   ]
 end
 
-to place-maple-syrup
+;; RANDOM DISTRIBUTION
+to place-random-maple-syrup
   let clean-patches patches
   ; Create the maple syrup places
   repeat number-of-maple-syrup
@@ -72,6 +83,28 @@ to place-maple-syrup
     ]
   ]
 end
+
+;; PACK DISTRIBUTION
+to place-pack-maple-syrup
+  let clean-patches patches
+  repeat number-of-pack
+ [
+  if any? clean-patches [
+  ask one-of clean-patches
+  [
+      let pack patches in-radius pack-radius
+      let diameter pack-radius * 2
+      let neighboor patches in-radius diameter
+      ask pack
+      [
+        set-patch-syrup pxcor pycor
+      ]
+      set clean-patches clean-patches with [ not member? self neighboor]
+  ]
+    ]
+  ]
+end
+
 
 to eat-maple-syrup
   ask patch-here
@@ -137,6 +170,9 @@ to-report cohesion-force
   let v-current list ( (first fk) + initial-speed * cos heading) ( (last fk) + initial-speed * sin heading)
   report vector-minus v-max v-current
 end
+
+
+;; Eva
 
 ;;; HELPER PROCEDURES
 
@@ -267,7 +303,7 @@ pancakes-population
 pancakes-population
 1.0
 1000.0
-12.0
+30.0
 1.0
 1
 NIL
@@ -327,7 +363,7 @@ coef-separate
 coef-separate
 0
 1
-0.22
+1.0
 0.01
 1
 NIL
@@ -342,7 +378,7 @@ coef-cohesion
 coef-cohesion
 0
 1
-0.08
+0.25
 0.01
 1
 NIL
@@ -357,37 +393,126 @@ coef-align
 coef-align
 0
 1
-0.14
+1.0
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1156
-128
-1329
-161
+1134
+313
+1307
+346
 number-of-maple-syrup
 number-of-maple-syrup
 1
-50
-19.0
+200
+131.0
 1
 1
 NIL
 HORIZONTAL
 
 INPUTBOX
-1167
-167
-1322
-227
+1136
+355
+1291
+415
 maple-syrup-color
 25.0
 1
 0
 Color
+
+SWITCH
+776
+314
+923
+347
+pack-distribution
+pack-distribution
+1
+1
+-1000
+
+TEXTBOX
+1166
+287
+1316
+305
+pack-distribution OFF
+11
+0.0
+1
+
+TEXTBOX
+949
+287
+1099
+305
+pack-distribution ON\n
+11
+0.0
+1
+
+SLIDER
+942
+359
+1114
+392
+pack-radius
+pack-radius
+1
+10
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+940
+313
+1112
+346
+number-of-pack
+number-of-pack
+1
+100
+10.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+952
+422
+1102
+492
+This will print pack as many as possible.\nIf the number is too high, the radius will be respected but not the pack number 
+11
+0.0
+1
+
+PLOT
+1138
+448
+1539
+805
+Syrup eaten percentage
+Time
+Percentage
+0.0
+10.0
+0.0
+100.0
+true
+true
+"" ""
+PENS
+"" 1.0 0 -10899396 true "" "let current-maple-syrup count patches with [ pcolor = maple-syrup-color ]\nlet eaten-this-tick 100 *((previous-maple-syrup - current-maple-syrup) / number-of-maple-syrup)\nset previous-maple-syrup current-maple-syrup\nset eaten-total-percentage (eaten-total-percentage + eaten-this-tick)\nplot eaten-total-percentage"
 
 @#$#@#$#@
 ## WHAT IS IT?
