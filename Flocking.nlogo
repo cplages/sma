@@ -27,8 +27,8 @@ to setup
       set size 1.5  ;; easier to see
       setxy random-xcor random-ycor
       set fk (list ((random-float 2) - 1) ((random-float 2) - 1))
-      set initial-speed 0.5
-      set max-speed 2
+      set initial-speed 1
+      set max-speed 1.5
       set flockmates no-turtles
     ]
 
@@ -156,21 +156,33 @@ end
 
 to-report align-force
   let heading-mean mean [heading] of flockmates
-  report list (cos heading-mean) (sin heading-mean)
+  report list (sin heading-mean) (cos heading-mean)
 end
 
 ;;; COHERE
+
+;to-report cohesion-force
+;  let gravity-center-x mean [xcor] of flockmates
+;  let gravity-center-y mean [ycor] of flockmates
+;  let gravity-center (list gravity-center-x gravity-center-y)
+;  let dir (vector-minus gravity-center (list xcor ycor))
+;  let v-max (vector-mult-scal dir max-speed)
+;  let v-current list ( (first fk) + initial-speed * cos heading) ( (last fk) + initial-speed * sin heading)
+;  report vector-minus v-max v-current
+;end
+;
 
 to-report cohesion-force
   let gravity-center-x mean [xcor] of flockmates
   let gravity-center-y mean [ycor] of flockmates
   let gravity-center (list gravity-center-x gravity-center-y)
-  let dir (vector-minus gravity-center (list xcor ycor))
-  let v-max (vector-mult-scal dir max-speed)
-  let v-current list ( (first fk) + initial-speed * cos heading) ( (last fk) + initial-speed * sin heading)
-  report vector-minus v-max v-current
+  let dir normalize (vector-minus gravity-center (list xcor ycor))
+  let current-speed initial-speed + norm fk
+  let cohesion-speed max-speed - current-speed
+  if cohesion-speed < 0
+  [set cohesion-speed 0]
+  report list (cohesion-speed * (first dir)) (cohesion-speed * (last dir))
 end
-
 
 ;; Eva
 
@@ -234,10 +246,10 @@ end
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-250
-10
-755
-516
+431
+87
+936
+593
 -1
 -1
 7.0
@@ -261,10 +273,10 @@ ticks
 30.0
 
 BUTTON
-39
-93
-116
-126
+551
+654
+628
+687
 NIL
 setup
 NIL
@@ -278,10 +290,10 @@ NIL
 1
 
 BUTTON
-122
-93
-203
-126
+714
+655
+795
+688
 NIL
 go
 T
@@ -295,10 +307,10 @@ NIL
 0
 
 SLIDER
-9
-51
-232
-84
+89
+128
+312
+161
 pancakes-population
 pancakes-population
 1.0
@@ -310,10 +322,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-9
-135
-232
-168
+72
+413
+295
+446
 vision
 vision
 0.0
@@ -325,25 +337,10 @@ patches
 HORIZONTAL
 
 SLIDER
-32
-326
-204
-359
-mass
-mass
-1
-10
-1.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-31
-366
-203
-399
+99
+300
+272
+333
 max-turn
 max-turn
 0
@@ -355,55 +352,55 @@ degrees
 HORIZONTAL
 
 SLIDER
-881
-127
-1053
-160
+85
+522
+257
+555
 coef-separate
 coef-separate
 0
 1
-1.0
+0.14
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-880
-168
-1052
-201
+84
+563
+256
+596
 coef-cohesion
 coef-cohesion
 0
 1
-0.25
+0.55
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-881
-209
-1053
-242
+85
+604
+257
+637
 coef-align
 coef-align
 0
 1
-1.0
+0.23
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1134
-313
-1307
-346
+1343
+169
+1516
+202
 number-of-maple-syrup
 number-of-maple-syrup
 1
@@ -415,10 +412,10 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-1136
-355
-1291
-415
+113
+174
+268
+234
 maple-syrup-color
 25.0
 1
@@ -426,41 +423,41 @@ maple-syrup-color
 Color
 
 SWITCH
-776
-314
-923
-347
+985
+170
+1132
+203
 pack-distribution
 pack-distribution
-1
+0
 1
 -1000
 
 TEXTBOX
-1166
-287
-1316
-305
-pack-distribution OFF
-11
+1346
+123
+1507
+181
+pack-distribution OFF parameters
+16
 0.0
 1
 
 TEXTBOX
-949
-287
-1099
-305
-pack-distribution ON\n
-11
+1154
+126
+1304
+166
+pack-distribution ON\nparameters
+16
 0.0
 1
 
 SLIDER
-942
-359
-1114
-392
+1151
+215
+1323
+248
 pack-radius
 pack-radius
 1
@@ -472,10 +469,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-940
-313
-1112
-346
+1149
+169
+1321
+202
 number-of-pack
 number-of-pack
 1
@@ -487,20 +484,20 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-952
-422
-1102
-492
+1160
+256
+1310
+376
 This will print pack as many as possible.\nIf the number is too high, the radius will be respected but not the pack number 
-11
-0.0
+16
+63.0
 1
 
 PLOT
-1138
-448
-1539
-805
+1018
+433
+1419
+790
 Syrup eaten percentage
 Time
 Percentage
@@ -513,6 +510,86 @@ true
 "" ""
 PENS
 "" 1.0 0 -10899396 true "" "let current-maple-syrup count patches with [ pcolor = maple-syrup-color ]\nlet eaten-this-tick 100 *((previous-maple-syrup - current-maple-syrup) / number-of-maple-syrup)\nset previous-maple-syrup current-maple-syrup\nset eaten-total-percentage (eaten-total-percentage + eaten-this-tick)\nplot eaten-total-percentage"
+
+TEXTBOX
+1097
+81
+1477
+127
+Mode Configuration
+30
+15.0
+1
+
+TEXTBOX
+989
+127
+1139
+167
+switch OFF/ON pack mode
+16
+0.0
+1
+
+TEXTBOX
+1195
+385
+1264
+425
+Plot
+30
+15.0
+1
+
+TEXTBOX
+54
+81
+361
+113
+Simulation Parameters
+30
+15.0
+1
+
+TEXTBOX
+63
+246
+326
+283
+Agent's Parameters
+30
+15.0
+1
+
+TEXTBOX
+56
+350
+348
+398
+Flocking Parameters
+30
+15.0
+1
+
+TEXTBOX
+62
+471
+307
+504
+Flocking Coefficients
+26
+25.0
+1
+
+TEXTBOX
+551
+603
+844
+643
+SETUP/GO Buttons
+30
+15.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
