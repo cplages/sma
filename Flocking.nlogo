@@ -1,4 +1,4 @@
-globals [previous-maple-syrup eaten-total-percentage]
+globals [previous-maple-syrup eaten-total-percentage play-n-simulation-list initial-number-syrup]
 
 
 turtles-own [
@@ -19,7 +19,6 @@ patches-own [
 to setup
   clear-all
   ;;set global variable
-  set previous-maple-syrup number-of-maple-syrup
   set eaten-total-percentage 0
 
   create-turtles pancakes-population
@@ -33,8 +32,44 @@ to setup
     ]
 
   ifelse pack-distribution
-  [ place-pack-maple-syrup]
-  [ place-random-maple-syrup ]
+  [
+    place-pack-maple-syrup
+  ]
+  [
+    place-random-maple-syrup
+  ]
+  set initial-number-syrup (count patches with [ pcolor = maple-syrup-color ])
+  set previous-maple-syrup initial-number-syrup
+  show previous-maple-syrup
+  reset-ticks
+end
+
+to restart-game
+  let tmp-simulation-list play-n-simulation-list
+  clear-all
+  set play-n-simulation-list tmp-simulation-list
+  ;;set global variable
+  set eaten-total-percentage 0
+
+  create-turtles pancakes-population
+    [ set color yellow - 2 + random 7  ;; random shades look nice
+      set size 1.5  ;; easier to see
+      setxy random-xcor random-ycor
+      set fk (list ((random-float 2) - 1) ((random-float 2) - 1))
+      set initial-speed 1
+      set max-speed 1.5
+      set flockmates no-turtles
+    ]
+
+  ifelse pack-distribution
+  [
+    place-pack-maple-syrup
+  ]
+  [
+    place-random-maple-syrup
+  ]
+  set initial-number-syrup (count patches with [ pcolor = maple-syrup-color ])
+  set previous-maple-syrup initial-number-syrup
   reset-ticks
 end
 
@@ -50,6 +85,25 @@ to go
   ] display
 
   tick
+end
+
+to play-n-simulation
+  while[simulation-number != 0] [
+  if(previous-maple-syrup = 0)
+  [
+      let average-syrup-eaten (initial-number-syrup / ticks)
+      ifelse(play-n-simulation-list = 0)
+      [ set play-n-simulation-list (list average-syrup-eaten)]
+      [ set play-n-simulation-list lput average-syrup-eaten play-n-simulation-list ]
+      restart-game
+      set simulation-number (simulation-number - 1)
+  ]
+  go
+  ]
+  show "Average maple syrup eaten per tick:"
+  show mean play-n-simulation-list
+  stop
+
 end
 
 ;; PANCAKES vs MAPLE SYRUP
@@ -241,7 +295,6 @@ to-report normalize [v0]
   [report vector-mult-scal v0 (1 / (norm v0))]
 end
 
-
 ; Copyright 1998 Uri Wilensky.
 ; See Info tab for full copyright and license.
 @#$#@#$#@
@@ -290,10 +343,10 @@ NIL
 1
 
 BUTTON
-714
-655
-795
-688
+658
+654
+739
+687
 NIL
 go
 T
@@ -315,7 +368,7 @@ pancakes-population
 pancakes-population
 1.0
 1000.0
-30.0
+20.0
 1.0
 1
 NIL
@@ -330,7 +383,7 @@ vision
 vision
 0.0
 10.0
-10.0
+3.0
 0.5
 1
 patches
@@ -360,7 +413,7 @@ coef-separate
 coef-separate
 0
 1
-0.14
+0.7
 0.01
 1
 NIL
@@ -375,7 +428,7 @@ coef-cohesion
 coef-cohesion
 0
 1
-0.55
+0.1
 0.01
 1
 NIL
@@ -390,7 +443,7 @@ coef-align
 coef-align
 0
 1
-0.23
+0.4
 0.01
 1
 NIL
@@ -405,7 +458,7 @@ number-of-maple-syrup
 number-of-maple-syrup
 1
 200
-131.0
+130.0
 1
 1
 NIL
@@ -493,24 +546,6 @@ This will print pack as many as possible.\nIf the number is too high, the radius
 63.0
 1
 
-PLOT
-1018
-433
-1419
-790
-Syrup eaten percentage
-Time
-Percentage
-0.0
-10.0
-0.0
-100.0
-true
-true
-"" ""
-PENS
-"" 1.0 0 -10899396 true "" "let current-maple-syrup count patches with [ pcolor = maple-syrup-color ]\nlet eaten-this-tick 100 *((previous-maple-syrup - current-maple-syrup) / number-of-maple-syrup)\nset previous-maple-syrup current-maple-syrup\nset eaten-total-percentage (eaten-total-percentage + eaten-this-tick)\nplot eaten-total-percentage"
-
 TEXTBOX
 1097
 81
@@ -582,14 +617,64 @@ Flocking Coefficients
 1
 
 TEXTBOX
-551
-603
-844
-643
-SETUP/GO Buttons
+556
+599
+984
+640
+SETUP/GO/Simulation Buttons
 30
 15.0
 1
+
+BUTTON
+775
+655
+900
+688
+NIL
+play-n-simulation
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
+
+SLIDER
+774
+707
+946
+740
+simulation-number
+simulation-number
+1
+300
+144.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+993
+445
+1443
+763
+maple syrup eaten percentage
+NIL
+NIL
+0.0
+10.0
+0.0
+100.0
+true
+false
+"" ""
+PENS
+"pen-0" 1.0 0 -955883 true "" "let current-maple-syrup count patches with [ pcolor = maple-syrup-color ]\nlet eaten-this-tick 100 *((previous-maple-syrup - current-maple-syrup) / initial-number-syrup)\nset previous-maple-syrup current-maple-syrup\nset eaten-total-percentage (eaten-total-percentage + eaten-this-tick)\nplot eaten-total-percentage"
 
 @#$#@#$#@
 ## WHAT IS IT?
